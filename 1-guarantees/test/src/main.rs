@@ -164,13 +164,13 @@ fn main() {
            .long("seed")
            .value_name("SEED")
            .help("Random seed used in tests")
-           .default_value("01092021"))
+           .default_value("2021"))
         .arg(Arg::with_name("dslib_path")
            .short("l")
            .long("lib")
            .value_name("PATH")
            .help("Path to dslib directory")
-           .default_value("../../../dslib"))
+           .default_value("../../dslib"))
         .get_matches();
     let solution_path = matches.value_of("solution_path").unwrap();
     let seed = value_t!(matches.value_of("seed"), u64).unwrap();
