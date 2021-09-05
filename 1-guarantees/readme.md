@@ -65,8 +65,45 @@ sender-a.
 
 ## Тестирование
 
+### Нативное с установленным Rust и библиотеками python
+
 Тесты находятся в папке `test`. Для запуска тестов перейдите в эту папку и выполните команду: `cargo run`. Вывод тестов 
-содержит трассы - последовательности событий во время выполнения каждого из тестов, а также финальную сводку.   
+содержит трассы - последовательности событий во время выполнения каждого из тестов, а также финальную сводку.
+
+### Docker
+
+Если по какой-то причине у вас не работает нативное тестирование через cargo, предлагается воспользоваться подготовленным docker образом (в нём же тесты запускаются в GitLab CI).
+
+Есть базовый образ `registry.gitlab.com/nanobjorn/distsys-homework`. Если у вас процессор Intel или AMD, то вам подойдет `latest`:
+```
+$ docker pull registry.gitlab.com/nanobjorn/distsys-homework
+```
+
+Если у вас M1 или другой arm64, то надо сделать:
+```
+$ docker pull registry.gitlab.com/nanobjorn/distsys-homework:arm64
+$ docker image tag registry.gitlab.com/nanobjorn/distsys-homework:arm64 registry.gitlab.com/nanobjorn/distsys-homework:latest
+```
+
+Теперь соберём образ c вашим решением и тестами:
+
+```
+docker build .. -t guarantees -f Dockerfile
+```
+
+И запустим тесты:
+
+```
+docker run --rm guarantees
+```
+
+Если вы поменяли solution.py, то можно запустить тесты без пересборки образа:
+
+```
+docker run --rm -v `pwd`:/guarantees/ guarantees
+```
+
+Опция -v смонтирует вашу папку задания внутрь контейнера, соответственно запуск `cargo run` будет использовать и создавать локальные файлы, а не внутри контейнера.
 
 ## Оценивание
 
@@ -86,4 +123,4 @@ sender-a.
 
 ## Сдача
 
-TODO
+Описано в корневом [README.md](../README.md).
