@@ -1,10 +1,8 @@
 use std::env;
-use std::collections::HashSet;
 use assertables::{assume, assume_eq};
 use clap::{Arg, App, value_t};
 use serde::Serialize;
-use serde_json::Value;
-use sugars::{hset, refcell, rc};
+use sugars::{refcell, rc};
 
 use dslib::system::System;
 use dslib::pynode::{JsonMessage, PyNodeFactory};
