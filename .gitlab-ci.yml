@@ -4,6 +4,12 @@ variables:
 stages:
   - test
 
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+    - if: $CI_COMMIT_BRANCH == "main"
+
+
 1-guarantees:
   image: docker:latest
   stage: test
