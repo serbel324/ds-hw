@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use assertables::{assume, assume_eq};
 use clap::{Arg, App, value_t};
@@ -22,7 +23,8 @@ struct TestConfig<'a> {
     seed: u64,
     info_type: &'a str,
     reliable: bool,
-    once: bool
+    once: bool,
+    ordered: bool,
 }
 
 fn build_system(config: &TestConfig) -> System<JsonMessage> {
@@ -34,117 +36,86 @@ fn build_system(config: &TestConfig) -> System<JsonMessage> {
     return sys;
 }
 
-fn check_delivery(sys: &mut System<JsonMessage>, expected: &JsonMessage,
-                  reliable: bool, once: bool) -> TestResult {
+fn check_guarantees(sys: &mut System<JsonMessage>, sent: &[JsonMessage],
+                    config: &TestConfig) -> TestResult {
+    let mut msg_count = HashMap::new();
+    for msg in sent {
+        msg_count.insert(msg.data.clone(), 0);
+    }
     let delivered = sys.read_local_messages("receiver");
-    assume!(delivered.len() > 0 || !reliable, "Info is not delivered")?;
-    if delivered.len() > 0 {
-        assume!(delivered.len() == 1 || !once, "Info is delivered more than once")?;
-        for msg in delivered {
-            assume_eq!(msg.tip, expected.tip, format!("Wrong message type {}", msg.tip))?;
-            assume_eq!(msg.data, expected.data, format!("Wrong message content: {}", msg.data))?;
+    // check that delivered messages have expected type and data
+    for msg in delivered.iter() {
+        // assuming all messages have the same type
+        assume_eq!(msg.tip, sent[0].tip, format!("Wrong message type {}", msg.tip))?;
+        assume!(msg_count.contains_key(&msg.data), format!("Wrong message data: {}", msg.data))?;
+        *msg_count.get_mut(&msg.data).unwrap() += 1;
+    }
+    // check delivered message count according to expected guarantees
+    for (data, count) in msg_count {
+        assume!(count > 0 || !config.reliable, format!("Message {} is not delivered", data))?;
+        assume!(count < 2 || !config.once, format!("Message {} is delivered more than once", data))?;
+    }
+    // check message delivery order
+    if config.ordered {
+        let mut next_idx = 0;
+        for i in 0..delivered.len() {
+            let msg = &delivered[i];
+            let mut matched = false;
+            while !matched && next_idx < sent.len() {
+                if msg.data == sent[next_idx].data {
+                    matched = true;
+                } else {
+                    next_idx += 1;
+                }
+            }
+            assume!(matched, format!("Order violation: {} after {}", msg.data, &delivered[i-1].data))?;
         }
     }
     Ok(true)
 }
 
-fn check_order(sys: &mut System<JsonMessage>, expected: &[JsonMessage]) -> TestResult {
-    let delivered = sys.read_local_messages("receiver");
-    assume_eq!(delivered.len(), expected.len(),
-        format!("Wrong count of delivered info: {} (expected {})", delivered.len(), expected.len()))?;
-    for i in 0..expected.len() {
-        assume_eq!(delivered[i].tip, expected[i].tip, "Wrong message type")?;
-        assume_eq!(delivered[i].data, expected[i].data,
-            format!("Wrong message content: {} (expected: {})", delivered[i].data, expected[i].data))?;
+fn send_info_messages(sys: &mut System<JsonMessage>, info_type: &str) -> Vec<JsonMessage> {
+    let infos = ["distributed", "systems", "need", "some", "guarantees"];
+    let mut messages = Vec::new();
+    for info in infos {
+        let msg = JsonMessage::from(info_type, &Info { info });
+        sys.send_local(msg.clone(), "sender");
+        messages.push(msg);
     }
-    Ok(true)
+    return messages;
 }
 
 // TESTS -------------------------------------------------------------------------------------------
 
 fn test_normal(config: &TestConfig) -> TestResult {
     let mut sys = build_system(config);
-    let info = JsonMessage::from(config.info_type, &Info { info: "123"});
-    sys.send_local(info.clone(), "sender");
+    let messages = send_info_messages(&mut sys, config.info_type);
     sys.step_until_no_events();
-    check_delivery(&mut sys, &info, config.reliable, config.once)
+    check_guarantees(&mut sys, &messages, config)
+}
+
+fn test_delayed(config: &TestConfig) -> TestResult {
+    let mut sys = build_system(config);
+    sys.set_delays(1., 5.);
+    let messages = send_info_messages(&mut sys, config.info_type);
+    sys.step_until_no_events();
+    check_guarantees(&mut sys, &messages, config)
 }
 
 fn test_duplicated(config: &TestConfig) -> TestResult {
     let mut sys = build_system(config);
     sys.set_dupl_rate(1.);
-    let info = JsonMessage::from(config.info_type, &Info { info: "123"});
-    sys.send_local(info.clone(), "sender");
+    let messages = send_info_messages(&mut sys, config.info_type);
     sys.step_until_no_events();
-    check_delivery(&mut sys, &info, config.reliable, config.once)
+    check_guarantees(&mut sys, &messages, config)
 }
 
 fn test_dropped(config: &TestConfig) -> TestResult {
     let mut sys = build_system(config);
-    sys.set_drop_rate(1.);
-    let info = JsonMessage::from(config.info_type, &Info { info: "123"});
-    sys.send_local(info.clone(), "sender");
-    sys.steps(10);
-    sys.set_drop_rate(0.);
+    sys.set_drop_rate(0.5);
+    let messages = send_info_messages(&mut sys, config.info_type);
     sys.step_until_no_events();
-    check_delivery(&mut sys, &info, config.reliable, config.once)
-}
-
-fn test_order_normal(config: &TestConfig) -> TestResult {
-    let count = 5;
-    let mut sys = build_system(config);
-    let mut infos = Vec::new();
-    for i in 0..count {
-        let info = JsonMessage::from(config.info_type, &Info { info: &i.to_string()});
-        sys.send_local(info.clone(), "sender");
-        infos.push(info);
-    }
-    sys.step_until_no_events();
-    check_order(&mut sys, &infos)
-}
-
-fn test_order_delayed(config: &TestConfig) -> TestResult {
-    let count = 5;
-    let mut sys = build_system(config);
-    sys.set_delays(1., 5.);
-    let mut infos = Vec::new();
-    for i in 0..count {
-        let info = JsonMessage::from(config.info_type, &Info { info: &i.to_string()});
-        sys.send_local(info.clone(), "sender");
-        infos.push(info);
-    }
-    sys.step_until_no_events();
-    check_order(&mut sys, &infos)
-}
-
-fn test_order_duplicated(config: &TestConfig) -> TestResult {
-    let count = 5;
-    let mut sys = build_system(config);
-    sys.set_dupl_rate(1.);
-    let mut infos = Vec::new();
-    for i in 0..count {
-        let info = JsonMessage::from(config.info_type, &Info { info: &i.to_string()});
-        sys.send_local(info.clone(), "sender");
-        infos.push(info);
-    }
-    sys.step_until_no_events();
-    check_order(&mut sys, &infos)
-}
-
-fn test_order_dropped(config: &TestConfig) -> TestResult {
-    let count = 5;
-    let mut sys = build_system(config);
-    sys.set_drop_rate(1.);
-    let mut infos = Vec::new();
-    for i in 0..count {
-        let info = JsonMessage::from(config.info_type, &Info { info: &i.to_string()});
-        sys.send_local(info.clone(), "sender");
-        infos.push(info);
-    }
-    sys.steps(20);
-    sys.set_drop_rate(0.);
-    sys.step_until_no_events();
-    check_order(&mut sys, &infos)
+    check_guarantees(&mut sys, &messages, config)
 }
 
 // MAIN --------------------------------------------------------------------------------------------
@@ -183,7 +154,8 @@ fn main() {
         seed,
         info_type: "INFO",
         reliable: false,
-        once: false
+        once: false,
+        ordered: false,
     };
     let mut tests = TestSuite::new();
 
@@ -193,6 +165,7 @@ fn main() {
     // without drops should be reliable
     config.reliable = true;
     tests.add("INFO-1 NORMAL", test_normal, config);
+    tests.add("INFO-1 DELAYED", test_delayed, config);
     tests.add("INFO-1 DUPLICATED", test_duplicated, config);
     // with drops is not reliable
     config.reliable = false;
@@ -203,6 +176,7 @@ fn main() {
     config.reliable = true;
     config.once = false;
     tests.add("INFO-2 NORMAL", test_normal, config);
+    tests.add("INFO-2 DELAYED", test_delayed, config);
     tests.add("INFO-2 DUPLICATED", test_duplicated, config);
     tests.add("INFO-2 DROPPED", test_dropped, config);
 
@@ -210,18 +184,17 @@ fn main() {
     config.info_type = "INFO-3";
     config.once = true;
     tests.add("INFO-3 NORMAL", test_normal, config);
+    tests.add("INFO-3 DELAYED", test_delayed, config);
     tests.add("INFO-3 DUPLICATED", test_duplicated, config);
     tests.add("INFO-3 DROPPED", test_dropped, config);
 
     // Exactly once + ordered
     config.info_type = "INFO-4";
+    config.ordered = true;
     tests.add("INFO-4 NORMAL", test_normal, config);
+    tests.add("INFO-4 DELAYED", test_delayed, config);
     tests.add("INFO-4 DUPLICATED", test_duplicated, config);
     tests.add("INFO-4 DROPPED", test_dropped, config);
-    tests.add("INFO-4 ORDER NORMAL", test_order_normal, config);
-    tests.add("INFO-4 ORDER DELAYED", test_order_delayed, config);
-    tests.add("INFO-4 ORDER DUPLICATED", test_order_duplicated, config);
-    tests.add("INFO-4 ORDER DROPPED", test_order_dropped, config);
 
     tests.run();
 }
