@@ -53,5 +53,5 @@ workflow:
     - docker-compose run --rm tests
   rules:
     - changes:
-        - 2-practice-grpc/*
+        - 2-practice-grpc/**/*
         - .gitlab-ci.yml
