@@ -85,7 +85,7 @@ def test_two_clients_multiple_messages(client1_url, client2_url):
         m['sendTime'] = resp['sendTime']
         times.add(m['sendTime'])
     assert len(times) == len(mes)
-    sorted(mes, key=lambda x: x['sendTime'])
+    mes = sorted(mes, key=lambda x: x['sendTime'])
     time.sleep(0.1)  # just in case of network delays
     messages = get_messages(client1_url)
     assert len(messages) == len(mes)
