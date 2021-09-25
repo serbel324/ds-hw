@@ -5,9 +5,24 @@ import pytest
 import requests
 
 
+def wait_for_http(url):
+    retries = 10
+    exception = None
+    while retries > 0:
+        try:
+            requests.get(url)
+            return
+        except requests.exceptions.ConnectionError as e:
+            exception = e
+            print(f'Got ConnectionError for url {url}: {e} , retrying')
+            time.sleep(2)
+    raise exception
+
+
 @pytest.fixture
 def client1_url():
     url = 'http://' + os.environ.get('MESSENGER_TEST_CLIENT1_ADDR', '127.0.0.1:8080')
+    wait_for_http(url)
     yield url
     get_messages(url)  # we need to flush pending messages after each test
 
@@ -15,6 +30,7 @@ def client1_url():
 @pytest.fixture
 def client2_url():
     url = 'http://' + os.environ.get('MESSENGER_TEST_CLIENT2_ADDR', '127.0.0.1:8081')
+    wait_for_http(url)
     yield url
     get_messages(url)
 
