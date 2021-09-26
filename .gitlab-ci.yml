@@ -55,3 +55,19 @@ workflow:
     - changes:
         - 2-practice-grpc/**/*
         - .gitlab-ci.yml
+
+
+3-http:
+  image: docker:latest
+  stage: test
+  services:
+    - docker:dind
+  script:
+    - cd 3-http
+    - docker-compose build server tests
+    - docker-compose up -d server
+    - docker-compose up --rm tests
+  rules:
+    - changes:
+        - 3-http/**/*
+        - .gitlab-ci.yml
