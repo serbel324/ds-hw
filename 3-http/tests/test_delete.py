@@ -1,5 +1,6 @@
 from http_builder import RequestBuilder
 from tests.test_put import LOREM_IPSUM
+from shutil import rmtree
 
 
 def test_delete_file(grader_http_delete_test, connection, file_state):
@@ -22,16 +23,15 @@ def test_delete_file(grader_http_delete_test, connection, file_state):
 
 
 def test_delete_directory_fail(grader_http_delete_test, connection, file_state):
-    file_state['/test-directory'].unlink(missing_ok=True)
+    rmtree(file_state['/test-directory'])
     file_state['/test-directory'].mkdir(parents=True, exist_ok=True)
 
     request = (
         RequestBuilder()
             .method("DELETE")
-            .path("/test-file")
+            .path("/test-directory")
             .version()
             .hostname(connection.hostname)
-            # .header('Remove-Directory', 'True')
             .render()
     )
 
@@ -43,13 +43,13 @@ def test_delete_directory_fail(grader_http_delete_test, connection, file_state):
 
 
 def test_delete_directory_success(grader_http_delete_test, connection, file_state):
-    file_state['/test-directory'].unlink(missing_ok=True)
+    rmtree(file_state['/test-directory'])
     file_state['/test-directory'].mkdir(parents=True, exist_ok=True)
 
     request = (
         RequestBuilder()
             .method("DELETE")
-            .path("/test-file")
+            .path("/test-directory")
             .version()
             .hostname(connection.hostname)
             .header('Remove-Directory', 'True')

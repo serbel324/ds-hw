@@ -77,7 +77,7 @@ def grader_response_parsing_test(request, grader):
     grader.http_response_parsing_total_tests += 1
     yield grader
     if request.node.rep_setup.passed and request.node.rep_call.passed:
-        grader.http_response_parsing_total_tests += 1
+        grader.http_response_parsing_passed_tests += 1
 
 
 @pytest.fixture(scope="function")

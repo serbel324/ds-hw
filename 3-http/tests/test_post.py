@@ -43,7 +43,7 @@ def test_file_already_exists(
     assert request_create_test_file.status == 409
     assert "content-length" in request_create_test_file.headers
     assert int(request_create_test_file.headers["content-length"]) > 0
-    assert request_create_test_file.body.count() > 0
+    assert len(request_create_test_file.body) > 0
 
 
 def test_create_directory(grader_http_post_test, connection, file_state):
