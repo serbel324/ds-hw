@@ -12,7 +12,7 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 10080
       SERVER_WORKING_DIRECTORY: /var/working-directory
-      SERVER_HOSTNAME: myhostname.server
+      SERVER_DOMAIN: myhostname.server
   tests:
     build:
       context: .
@@ -21,7 +21,7 @@ services:
       SERVER_HOST: server
       SERVER_PORT: 10080
       SERVER_WORKING_DIRECTORY: /var/working-directory
-      SERVER_HOSTNAME: myhostname.server
+      SERVER_DOMAIN: myhostname.server
     volumes:
       - ./base_data:/var/working-directory
 

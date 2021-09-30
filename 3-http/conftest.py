@@ -82,11 +82,11 @@ def grader_response_parsing_test(request, grader):
         grader.http_response_parsing_total_tests += 1
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def connection():
     host = os.environ.get("SERVER_HOST", "localhost")
     port = int(os.environ.get("SERVER_PORT", 8000))
-    hostname = os.environ.get("SERVER_HOSTNAME", "example.domain")
+    hostname = os.environ.get("SERVER_DOMAIN", "example.domain")
 
     yield Connection(host, port, hostname)
 

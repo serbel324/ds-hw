@@ -68,7 +68,7 @@ class HTTPHandler(StreamRequestHandler):
 @click.command()
 @click.option("--host", default="0.0.0.0", type=str)
 @click.option("--port", default=10080, type=int)
-@click.option("--server-domain", default="domain.example", type=str)
+@click.option("--domain", default="domain.example", type=str)
 @click.option("--working-directory", type=pathlib.Path)
 def main(host, port, server_domain, working_directory):
     logger.info(
