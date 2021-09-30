@@ -1,6 +1,6 @@
 import logging
 import stat
-
+import gzip
 import pytest
 
 from http_builder import RequestBuilder
@@ -70,6 +70,36 @@ def test_response_body_permissions(
     grader_http_get_test, connection, response, file_state
 ):
     for line in response.body.decode().split("\r\n"):
+        permissions, *_, name = line.split()
+        file_on_disk = file_state[f"/{name}"]
+
+        assert permissions[0] == ("d" if file_on_disk.is_dir() else "-")
+        assert permissions[1] == "r" if file_on_disk.stat()[0] & stat.S_IRUSR else "-"
+        assert permissions[2] == "w" if file_on_disk.stat()[0] & stat.S_IWUSR else "-"
+        assert permissions[3] == "x" if file_on_disk.stat()[0] & stat.S_IXUSR else "-"
+        assert permissions[4] == "r" if file_on_disk.stat()[0] & stat.S_IRGRP else "-"
+        assert permissions[5] == "w" if file_on_disk.stat()[0] & stat.S_IWGRP else "-"
+        assert permissions[6] == "x" if file_on_disk.stat()[0] & stat.S_IXGRP else "-"
+        assert permissions[7] == "r" if file_on_disk.stat()[0] & stat.S_IROTH else "-"
+        assert permissions[8] == "w" if file_on_disk.stat()[0] & stat.S_IWOTH else "-"
+        assert permissions[9] == "x" if file_on_disk.stat()[0] & stat.S_IXOTH else "-"
+
+
+def test_compression(grader_http_get_test, connection, file_state):
+    request = (
+        RequestBuilder()
+            .method("GET")
+            .path("/")
+            .version()
+            .hostname("not-a-valid-hostname")
+            .header('Accept-Encoding', 'gzip')
+            .render()
+    )
+    response = connection.request(request)
+
+    assert response.headers['Content-Encoding'] == 'gzip'
+
+    for line in gzip.decompress(response.body).decode().split("\r\n"):
         permissions, *_, name = line.split()
         file_on_disk = file_state[f"/{name}"]
 
