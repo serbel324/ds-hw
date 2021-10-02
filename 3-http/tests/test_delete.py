@@ -23,7 +23,7 @@ def test_delete_file(grader_http_delete_test, connection, file_state):
 
 
 def test_delete_directory_fail(grader_http_delete_test, connection, file_state):
-    rmtree(file_state['/test-directory'])
+    rmtree(file_state['/test-directory'], ignore_errors=True)
     file_state['/test-directory'].mkdir(parents=True, exist_ok=True)
 
     request = (
@@ -43,7 +43,7 @@ def test_delete_directory_fail(grader_http_delete_test, connection, file_state):
 
 
 def test_delete_directory_success(grader_http_delete_test, connection, file_state):
-    rmtree(file_state['/test-directory'])
+    rmtree(file_state['/test-directory'], ignore_errors=True)
     file_state['/test-directory'].mkdir(parents=True, exist_ok=True)
 
     request = (
@@ -60,24 +60,3 @@ def test_delete_directory_success(grader_http_delete_test, connection, file_stat
 
     assert response.status == 200
     assert not file_state['/test-directory'].exists()
-
-
-def test_update_data_in_file(grader_http_put_test, connection, file_state):
-    file_state["/test-file"].unlink(missing_ok=True)
-    file_state["/test-file"].write_text("Hello, world!")
-
-    request = (
-        RequestBuilder()
-            .method("PUT")
-            .path("/test-file")
-            .version()
-            .hostname(connection.hostname)
-            .body(LOREM_IPSUM)
-            .render()
-    )
-
-    response = connection.request(request)
-
-    assert response.status == 200
-
-    assert file_state['/test-file'].read_text() == LOREM_IPSUM

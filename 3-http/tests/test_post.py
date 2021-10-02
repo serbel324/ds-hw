@@ -76,6 +76,6 @@ def test_file_create_invalid_path(grader_http_post_test, connection):
     response = connection.request(request)
 
     assert response.status == 400
-    assert "content-length" in request_create_test_file.headers
-    assert int(request_create_test_file.headers["content-length"]) > 0
-    assert request_create_test_file.body.count() > 0
+    assert "content-length" in response.headers
+    assert int(response.headers["content-length"]) > 0
+    assert len(response.body) > 0

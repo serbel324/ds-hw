@@ -91,13 +91,13 @@ def test_compression(grader_http_get_test, connection, file_state):
             .method("GET")
             .path("/")
             .version()
-            .hostname("not-a-valid-hostname")
+            .hostname(connection.hostname)
             .header('Accept-Encoding', 'gzip')
             .render()
     )
     response = connection.request(request)
 
-    assert response.headers['Content-Encoding'] == 'gzip'
+    assert response.headers['content-encoding'] == 'gzip'
 
     for line in gzip.decompress(response.body).decode().split("\r\n"):
         permissions, *_, name = line.split()
