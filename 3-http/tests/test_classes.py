@@ -58,4 +58,4 @@ def test_http_response_from_bytes(grader_response_parsing_test):
 
 
 def test_http_response_to_bytes(grader_response_parsing_test):
-    assert server.HTTPResponse.from_bytes(response_data).to_bytes() == response_data
+    assert server.HTTPResponse.from_bytes(response_data).to_bytes().strip() == response_data.strip()
