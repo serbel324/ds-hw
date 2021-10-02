@@ -22,7 +22,7 @@ def test_http_request_from_bytes(grader_request_parsing_test):
     assert r.path == "/"
     assert r.version == "1.1"
     assert r.parameters == {"query_parameter": "123456"}
-    assert r.headers == {"Header": "123", "Another-Header": "True"}
+    assert r.headers == {"header": "123", "another-header": "True"}
     assert r.body == b"This is some body text"
 
 
@@ -32,7 +32,7 @@ def test_http_request_without_query_parameters(grader_request_parsing_test):
     assert r.path == "/"
     assert r.version == "1.1"
     assert r.parameters == {}
-    assert r.headers == {"Header": "123", "Another-Header": "True"}
+    assert r.headers == {"header": "123", "another-header": "True"}
     assert r.body == b"This is some body text"
 
 
@@ -53,8 +53,8 @@ def test_http_response_from_bytes(grader_response_parsing_test):
     assert r.status == '200'
     assert r.version == '1.1'
     assert r.body == b'1234567890'
-    assert r.headers['Content-Type'] == 'application/octet-stream'
-    assert r.headers['Content-Length'] == '10'
+    assert r.headers['content-type'] == 'application/octet-stream'
+    assert r.headers['content-length'] == '10'
 
 
 def test_http_response_to_bytes(grader_response_parsing_test):
