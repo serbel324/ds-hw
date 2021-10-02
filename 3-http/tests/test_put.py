@@ -28,7 +28,7 @@ def test_update_directory_data(grader_http_put_test, connection, file_state):
     assert response.status == 409
     assert "content-length" in response.headers
     assert int(response.headers["content-length"]) > 0
-    assert len(response.data) > 0
+    assert len(response.body) > 0
 
 
 def test_update_data_in_file(grader_http_put_test, connection, file_state):
