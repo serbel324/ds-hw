@@ -5,6 +5,7 @@ use clap::{Arg, App, value_t};
 use serde::Serialize;
 use sugars::{refcell, rc};
 
+use dslib::node::LocalEventType;
 use dslib::system::System;
 use dslib::pynode::{JsonMessage, PyNodeFactory};
 use dslib::test::{TestSuite, TestResult};
@@ -42,7 +43,10 @@ fn check_guarantees(sys: &mut System<JsonMessage>, sent: &[JsonMessage],
     for msg in sent {
         msg_count.insert(msg.data.clone(), 0);
     }
-    let delivered = sys.read_local_messages("receiver");
+    let delivered = sys.get_local_events("receiver").into_iter()
+        .filter(|e| matches!(e.tip, LocalEventType::LocalMessageSend))
+        .map(|e| e.msg.unwrap())
+        .collect::<Vec<_>>();
     // check that delivered messages have expected type and data
     for msg in delivered.iter() {
         // assuming all messages have the same type
