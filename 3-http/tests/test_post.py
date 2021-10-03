@@ -1,6 +1,7 @@
 import pytest
 
 from http_builder import RequestBuilder
+from shutil import rmtree
 
 
 @pytest.fixture(scope="function")
@@ -57,6 +58,7 @@ def test_create_directory(grader_http_post_test, connection, file_state):
             .body("Trololo")
             .render()
     )
+    rmtree(file_state['/test-directory'], ignore_errors=True)
     response = connection.request(request)
     assert response.status == 200
 
