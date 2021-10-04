@@ -393,7 +393,7 @@ fn main() {
     tests.add("TWO CRASHES 2", test_two_crashes2, config);
     tests.add("CAUSAL ORDER", test_causal_order, config);
     for run in 0..monkeys {
-        tests.add(&format!("🐒🐒CHAOS MONKEY (run {})", run), test_chaos_monkey, config.clone());
+        tests.add(&format!("CHAOS MONKEY (run {})", run), test_chaos_monkey, config.clone());
         config.seed += 10;
     }
     //tests.add("SCALABILITY", test_scalability, config.clone());
