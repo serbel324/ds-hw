@@ -102,3 +102,21 @@ workflow:
         - dslib/*
         - 4-broadcast/*
         - .gitlab-ci.yml
+
+
+5-practice-messaging:
+  image: docker:latest
+  stage: test
+  services:
+    - docker:dind
+  before_script:
+    - apk add --no-cache docker-compose
+  script:
+    - cd 5-practice-messaging
+    - docker-compose build
+    - docker-compose up --scale worker=2 rabbitmq web worker
+    - docker-compose run --rm pytest
+  rules:
+    - changes:
+        - 5-practice-messaging/**/*
+        - .gitlab-ci.yml
