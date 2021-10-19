@@ -114,7 +114,7 @@ workflow:
   script:
     - cd 5-practice-messaging
     - docker-compose build
-    - docker-compose up --scale worker=2 rabbitmq web worker
+    - docker-compose up -d --scale worker=2 rabbitmq web worker
     - docker-compose run --rm pytest
   rules:
     - changes:
