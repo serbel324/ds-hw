@@ -12,7 +12,7 @@ IMAGES_ENDPOINT = URL + '/api/v1.0/images'
 
 
 def test_post_image():
-    input_data = {"url": "https://jrnlst.ru/sites/default/files/covers/cover_6.jpg"}
+    input_data = {"image_url": "https://jrnlst.ru/sites/default/files/covers/cover_6.jpg"}
     response = requests.post(IMAGES_ENDPOINT, json=input_data)
     logger.info(response.json())
     assert response.status_code == 200

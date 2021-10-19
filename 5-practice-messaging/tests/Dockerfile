@@ -7,4 +7,4 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-ENTRYPOINT ["pytest", "-vs"]
+ENTRYPOINT ["bash", "-c", "while ! curl -s web:5000 > /dev/null; do echo waiting for server; sleep 3; done; pytest -vs"]
