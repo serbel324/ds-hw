@@ -1,4 +1,5 @@
 4-broadcast:
+  extends: .hw-dslib-test
   image: docker:latest
   stage: test
   variables:
@@ -19,9 +20,3 @@
     - docker build --pull -t "$TASK_IMAGE${tag}" . -f 4-broadcast/Dockerfile
     - docker push "$TASK_IMAGE${tag}"
     - docker run --rm "$TASK_IMAGE${tag}"
-  # Run this job in a branch where a Dockerfile exists
-  rules:
-    - changes:
-        - dslib/*
-        - $CI_JOB_NAME/**/*
-        - .gitlab-ci/$CI_JOB_NAME.yml

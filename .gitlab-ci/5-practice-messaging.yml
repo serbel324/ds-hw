@@ -1,4 +1,5 @@
 5-practice-messaging:
+  extends: .hw-test
   image: docker:latest
   stage: test
   services:
@@ -11,7 +12,3 @@
     - docker-compose up -d --scale worker=2 rabbitmq web worker
     - docker-compose run --rm pytest
     - docker-compose down
-  rules:
-    - changes:
-        - $CI_JOB_NAME/**/*
-        - .gitlab-ci/$CI_JOB_NAME.yml

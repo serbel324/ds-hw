@@ -1,4 +1,5 @@
 2-practice-grpc:
+  extends: .hw-test
   image: docker:latest
   stage: test
   services:
@@ -10,7 +11,3 @@
     - docker-compose build server client1 client2 tests
     - docker-compose up -d server client1 client2
     - docker-compose run --rm tests
-  rules:
-    - changes:
-        - $CI_JOB_NAME/**/*
-        - .gitlab-ci/$CI_JOB_NAME.yml
