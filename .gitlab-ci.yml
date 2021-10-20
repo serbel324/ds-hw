@@ -9,4 +9,5 @@ workflow:
     - if: $CI_MERGE_REQUEST_ID
     - if: $CI_COMMIT_BRANCH == "main"
 
+# To create templates for new HW jobs, use "create-hw.sh"
 include: '.gitlab-ci/**.yml'
