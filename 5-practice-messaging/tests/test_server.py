@@ -20,7 +20,7 @@ def test_post_image():
 
 
 def test_get_image():
-    time.sleep(30)  # Waiting for 30 seconds to process image
+    time.sleep(300)  # Waiting for 300 seconds to process image
     response = requests.get(IMAGES_ENDPOINT)
     image_ids = response.json()['image_ids']
     response = requests.get(f'{IMAGES_ENDPOINT}/{image_ids[0]}')
