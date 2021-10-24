@@ -1,5 +1,2 @@
 loguru==0.5.3
 pika==1.2.0
-transformers==4.9.0
-scikit-image==0.18.3
-git+https://github.com/openai/CLIP.git#egg=clip
