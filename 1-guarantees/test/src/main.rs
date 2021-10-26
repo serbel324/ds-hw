@@ -2,7 +2,10 @@ use std::collections::HashMap;
 use std::env;
 use assertables::{assume, assume_eq};
 use clap::{Arg, App, value_t};
+use env_logger::Builder;
+use log::LevelFilter;
 use serde::Serialize;
+use std::io::Write;
 use sugars::{refcell, rc};
 
 use dslib::node::LocalEventType;
@@ -28,11 +31,24 @@ struct TestConfig<'a> {
     ordered: bool,
 }
 
+fn init_logger(level: LevelFilter) {
+    Builder::new()
+        .filter(None, level)
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "{}",
+                record.args()
+            )
+        })
+        .init();
+}
+
 fn build_system(config: &TestConfig) -> System<JsonMessage> {
     let mut sys = System::with_seed(config.seed);
-    let sender = config.sender_f.build("sender", ("sender", "receiver"));
+    let sender = config.sender_f.build("sender", ("sender", "receiver"), config.seed);
     sys.add_node(rc!(refcell!(sender)));
-    let receiver = config.receiver_f.build("receiver", ("receiver",));
+    let receiver = config.receiver_f.build("receiver", ("receiver",), config.seed);
     sys.add_node(rc!(refcell!(receiver)));
     return sys;
 }
@@ -148,6 +164,7 @@ fn main() {
     let solution_path = matches.value_of("solution_path").unwrap();
     let seed = value_t!(matches.value_of("seed"), u64).unwrap();
     let dslib_path = matches.value_of("dslib_path").unwrap();
+    init_logger(LevelFilter::Trace);
 
     env::set_var("PYTHONPATH", format!("{}/python", dslib_path));
     let sender_f = PyNodeFactory::new(solution_path, "Sender");

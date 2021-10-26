@@ -1,10 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
 use clap::{Arg, App, value_t};
+use env_logger::Builder;
+use log::LevelFilter;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 use serde_json::Value;
+use std::io::Write;
 use sugars::{refcell, rc};
 
 use dslib::node::LocalEventType;
@@ -26,6 +29,19 @@ struct TestConfig<'a> {
     seed: u64,
 }
 
+fn init_logger(level: LevelFilter) {
+    Builder::new()
+        .filter(None, level)
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "{}",
+                record.args()
+            )
+        })
+        .init();
+}
+
 fn build_system(config: &TestConfig) -> System<JsonMessage> {
     let mut sys = System::with_seed(config.seed);
     let mut node_ids = Vec::new();
@@ -33,7 +49,7 @@ fn build_system(config: &TestConfig) -> System<JsonMessage> {
         node_ids.push(format!("{}", n));
     }
     for node_id in node_ids.iter() {
-        let node = config.node_factory.build(node_id, (node_id, node_ids.clone()));
+        let node = config.node_factory.build(node_id, (node_id, node_ids.clone()), config.seed);
         sys.add_node(rc!(refcell!(node)));
     }
     return sys;
@@ -376,6 +392,7 @@ fn main() {
     let seed = value_t!(matches.value_of("seed"), u64).unwrap();
     let monkeys = value_t!(matches.value_of("monkeys"), u32).unwrap();
     let dslib_path = matches.value_of("dslib_path").unwrap();
+    init_logger(LevelFilter::Trace);
 
     env::set_var("PYTHONPATH", format!("{}/python", dslib_path));
     let node_factory = PyNodeFactory::new(solution_path, "BroadcastNode");
