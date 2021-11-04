@@ -581,7 +581,7 @@ fn test_scalability_normal(config: &TestConfig) -> TestResult {
             let size_ratio = sys_sizes[i] as f64 / sys_sizes[i-1] as f64;
             let traffic_ratio =  traffic / measurements[i-1].1;
             let messages_ratio =  message_count / measurements[i-1].2;
-            if traffic_ratio > 2.0 * size_ratio && messages_ratio > 2.0 * size_ratio {
+            if traffic_ratio > 2.0 * size_ratio || messages_ratio > 2.0 * size_ratio {
                 scaling_ok = false;
             }
         }
@@ -649,7 +649,8 @@ fn test_scalability_crash(config: &TestConfig) -> TestResult {
         if i > 0 {
             let size_ratio = sys_sizes[i] as f64 / sys_sizes[i-1] as f64;
             let traffic_ratio =  traffic / measurements[i-1].1;
-            if traffic_ratio > 2.0 * size_ratio {
+            let messages_ratio =  message_count / measurements[i-1].2;
+            if traffic_ratio > 2.0 * size_ratio || messages_ratio > 2.0 * size_ratio {
                 scaling_ok = false;
             }
         }
