@@ -79,21 +79,20 @@ fn step_until_stabilized(sys: &mut System<JsonMessage>, group: HashSet<String>,
     while stabilized.len() < group.len() && steps <= max_steps {
         let cont = sys.steps(steps_per_iter);
         steps += steps_per_iter;
+        stabilized.clear();
         for node in group.iter() {
-            if !stabilized.contains(node) {
-                sys.send_local(JsonMessage::from("GET_MEMBERS", &GetMembersMessage {}), &node);
-                let res = sys.step_until_local_message_max_steps(&node, max_steps);
-                assume!(res.is_ok(), format!("Members list is not returned by {}", &node))?;
-                let msgs = res.unwrap();
-                let msg = msgs.first().unwrap();
-                assume!(msg.tip == "MEMBERS", "Wrong message type")?;
-                let data: MembersMessage = serde_json::from_str(&msg.data).unwrap();
-                let members: HashSet<String> = data.members.clone().into_iter().collect();
-                if members.eq(&group) {
-                    stabilized.insert(node.clone());
-                }
-                memberlists.insert(node.clone(), data.members);
+            sys.send_local(JsonMessage::from("GET_MEMBERS", &GetMembersMessage {}), &node);
+            let res = sys.step_until_local_message_max_steps(&node, max_steps);
+            assume!(res.is_ok(), format!("Members list is not returned by {}", &node))?;
+            let msgs = res.unwrap();
+            let msg = msgs.first().unwrap();
+            assume!(msg.tip == "MEMBERS", "Wrong message type")?;
+            let data: MembersMessage = serde_json::from_str(&msg.data).unwrap();
+            let members: HashSet<String> = data.members.clone().into_iter().collect();
+            if members.eq(&group) {
+                stabilized.insert(node.clone());
             }
+            memberlists.insert(node.clone(), data.members);
         }
         if !cont {
             break
@@ -109,6 +108,9 @@ fn step_until_stabilized(sys: &mut System<JsonMessage>, group: HashSet<String>,
                 println!("- [{}] {}", node, members.join(", "));
             }
         }
+        let mut expected = group.clone().into_iter().collect::<Vec<_>>();
+        expected.sort();
+        println!("Expected group: {}", expected.join(", "));
     }
     assume_eq!(stabilized, group, "Group members lists are not stabilized")?;
     Ok(true)
@@ -138,7 +140,7 @@ fn test_random_seed(config: &TestConfig) -> TestResult {
         sys.send_local(JsonMessage::from("JOIN", &JoinMessage { seed }), &node);
         group.push(node);
     }
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_node_join(config: &TestConfig) -> TestResult {
@@ -195,7 +197,7 @@ fn test_node_crash(config: &TestConfig) -> TestResult {
     // node crashes
     let crashed_node = group.remove(rand.gen_range(0..group.len()));
     sys.crash_node(&crashed_node);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_seed_node_crash(config: &TestConfig) -> TestResult {
@@ -213,7 +215,7 @@ fn test_seed_node_crash(config: &TestConfig) -> TestResult {
     // seed node crashes
     group.remove(0);
     sys.crash_node(&seed);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_node_crash_recover(config: &TestConfig) -> TestResult {
@@ -231,13 +233,13 @@ fn test_node_crash_recover(config: &TestConfig) -> TestResult {
     // node crashes
     let crashed_node = group.remove(rand.gen_range(0..group.len()));
     sys.crash_node(&crashed_node);
-    step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 30, 300)?;
+    step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 50, 1000)?;
 
     // node recovers
     recover_node(&crashed_node, &mut sys, &config);
     sys.send_local(JsonMessage::from("JOIN", &JoinMessage { seed }), &crashed_node);
     group.push(crashed_node);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_node_offline(config: &TestConfig) -> TestResult {
@@ -255,7 +257,7 @@ fn test_node_offline(config: &TestConfig) -> TestResult {
     // node goes offline
     let offline_node = group.remove(rand.gen_range(0..group.len()));
     sys.disconnect_node(&offline_node);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_seed_node_offline(config: &TestConfig) -> TestResult {
@@ -273,7 +275,7 @@ fn test_seed_node_offline(config: &TestConfig) -> TestResult {
     // seed node goes offline
     group.remove(0);
     sys.disconnect_node(&seed);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_node_offline_recover(config: &TestConfig) -> TestResult {
@@ -291,12 +293,12 @@ fn test_node_offline_recover(config: &TestConfig) -> TestResult {
     // node goes offline
     let offline_node = group.remove(rand.gen_range(0..group.len()));
     sys.disconnect_node(&offline_node);
-    step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 30, 300)?;
+    step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 50, 1000)?;
 
     // node goes back online
     sys.connect_node(&offline_node);
     group.push(offline_node);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_network_partition(config: &TestConfig) -> TestResult {
@@ -314,8 +316,8 @@ fn test_network_partition(config: &TestConfig) -> TestResult {
     // network is partitioned
     let (group1, group2): (Vec<_>, Vec<_>) = group.iter().map(|s| &**s).partition(|_| rand.gen_range(0.0..1.0) > 0.6);
     sys.make_partition(&group1, &group2);
-    step_until_stabilized(&mut sys, group1.into_iter().map(String::from).collect(), 30, 1000)?;
-    step_until_stabilized(&mut sys, group2.into_iter().map(String::from).collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group1.into_iter().map(String::from).collect(), 50, 1000)?;
+    step_until_stabilized(&mut sys, group2.into_iter().map(String::from).collect(), 50, 1000)
 }
 
 fn test_network_partition_recover(config: &TestConfig) -> TestResult {
@@ -333,12 +335,12 @@ fn test_network_partition_recover(config: &TestConfig) -> TestResult {
     // network is partitioned
     let (group1, group2): (Vec<_>, Vec<_>) = group.iter().map(|s| &**s).partition(|_| rand.gen_range(0.0..1.0) > 0.6);
     sys.make_partition(&group1, &group2);
-    step_until_stabilized(&mut sys, group1.into_iter().map(String::from).collect(), 30, 1000)?;
-    step_until_stabilized(&mut sys, group2.into_iter().map(String::from).collect(), 30, 1000)?;
+    step_until_stabilized(&mut sys, group1.into_iter().map(String::from).collect(), 50, 1000)?;
+    step_until_stabilized(&mut sys, group2.into_iter().map(String::from).collect(), 50, 1000)?;
 
     // network is recovered
     sys.reset_network();
-    step_until_stabilized(&mut sys, group.into_iter().map(String::from).collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group.into_iter().map(String::from).collect(), 50, 2000)
 }
 
 fn test_node_cannot_receive(config: &TestConfig) -> TestResult {
@@ -356,7 +358,7 @@ fn test_node_cannot_receive(config: &TestConfig) -> TestResult {
     // node goes partially offline (cannot receive incoming messages)
     let blocked_node = group.remove(rand.gen_range(0..group.len()));
     sys.drop_incoming(&blocked_node);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_node_cannot_send(config: &TestConfig) -> TestResult {
@@ -374,7 +376,7 @@ fn test_node_cannot_send(config: &TestConfig) -> TestResult {
     // node goes partially offline (cannot send outgoing messages)
     let blocked_node = group.remove(rand.gen_range(0..group.len()));
     sys.drop_outgoing(&blocked_node);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_two_nodes_cannot_communicate(config: &TestConfig) -> TestResult {
@@ -398,8 +400,8 @@ fn test_two_nodes_cannot_communicate(config: &TestConfig) -> TestResult {
     sys.disable_link(&node1, &node2);
     sys.disable_link(&node2, &node1);
     // run for a while
-    sys.steps(100);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    sys.steps(1000);
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_slow_network(config: &TestConfig) -> TestResult {
@@ -418,7 +420,7 @@ fn test_slow_network(config: &TestConfig) -> TestResult {
     sys.set_delays(0.1, 1.0);
     sys.steps(200);
     sys.set_delays(0.01, 0.1);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 300)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 1000)
 }
 
 fn test_flaky_network(config: &TestConfig) -> TestResult {
@@ -435,9 +437,9 @@ fn test_flaky_network(config: &TestConfig) -> TestResult {
 
     // make network unreliable for a while
     sys.set_drop_rate(0.5);
-    sys.steps(200);
+    sys.steps(1000);
     sys.set_drop_rate(0.0);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 2000)
 }
 
 fn test_flaky_network_on_start(config: &TestConfig) -> TestResult {
@@ -452,10 +454,9 @@ fn test_flaky_network_on_start(config: &TestConfig) -> TestResult {
     for node in &group {
         sys.send_local(JsonMessage::from("JOIN", &JoinMessage { seed }), node);
     }
-    step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 30, 1000)?;
-    sys.steps(200);
+    sys.steps(1000);
     sys.set_drop_rate(0.0);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 2000)
 }
 
 fn test_flaky_network_and_crash(config: &TestConfig) -> TestResult {
@@ -474,9 +475,9 @@ fn test_flaky_network_and_crash(config: &TestConfig) -> TestResult {
     sys.set_drop_rate(0.5);
     let crashed_node = group.remove(rand.gen_range(0..group.len()));
     sys.crash_node(&crashed_node);
-    sys.steps(200);
+    sys.steps(1000);
     sys.set_drop_rate(0.0);
-    step_until_stabilized(&mut sys, group.into_iter().collect(), 30, 1000)
+    step_until_stabilized(&mut sys, group.into_iter().collect(), 50, 2000)
 }
 
 fn test_chaos_monkey(config: &TestConfig) -> TestResult {
@@ -521,7 +522,7 @@ fn test_chaos_monkey(config: &TestConfig) -> TestResult {
                 sys.disable_link(&node2, &node1);
             }
         }
-        step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 30, 2000)?;
+        step_until_stabilized(&mut sys, group.clone().into_iter().collect(), 50, 2000)?;
     }
     Ok(true)
 }
