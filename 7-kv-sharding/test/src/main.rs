@@ -329,18 +329,20 @@ const WEIGHTS: [usize; 36] = [
     10, 1, 24, 3, 1, 8, 12, 22, 5, 20, 18, 5, 5, 2, 1, 3, 16, 22
 ];
 
-fn random_string(length: usize) -> String {
+fn random_string(length: usize, rand: &mut Pcg64) -> String {
     let dist = WeightedIndex::new(&WEIGHTS).unwrap();
-    rand::thread_rng().sample_iter(&dist).take(length).map(|x| SYMBOLS[x]).collect()
+    rand.sample_iter(&dist).take(length).map(|x| SYMBOLS[x]).collect()
 }
 
 // TESTS -------------------------------------------------------------------------------------------
 
 fn test_single_node(config: &TestConfig) -> TestResult {
     let mut sys = build_system(config);
+    let mut rand = Pcg64::seed_from_u64(config.seed);
+
     let node = "0";
-    let key = random_string(8).to_uppercase();
-    let value = random_string(8);
+    let key = random_string(8, &mut rand).to_uppercase();
+    let value = random_string(8, &mut rand);
     let max_steps = 10;
 
     check_get(&mut sys, node, &key, None, max_steps)?;
@@ -353,12 +355,13 @@ fn test_single_node(config: &TestConfig) -> TestResult {
 
 fn test_inserts(config: &TestConfig) -> TestResult {
     let mut sys = build_system(config);
+    let mut rand = Pcg64::seed_from_u64(config.seed);
 
     // insert random key-value pairs from each node
     let mut kv = HashMap::new();
     for node in sys.get_node_ids() {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
     }
@@ -375,8 +378,8 @@ fn test_deletes(config: &TestConfig) -> TestResult {
 
     // insert random key-value pairs from each node
     for node in sys.get_node_ids() {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
     }
@@ -406,8 +409,8 @@ fn test_node_added(config: &TestConfig) -> TestResult {
     let keys_count = 100;
     let mut kv = HashMap::new();
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -433,8 +436,8 @@ fn test_node_removed(config: &TestConfig) -> TestResult {
     let keys_count = 100;
     let mut kv = HashMap::new();
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -461,8 +464,8 @@ fn test_node_removed_after_crash(config: &TestConfig) -> TestResult {
     let keys_count = 100;
     let mut kv = HashMap::new();
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -494,8 +497,8 @@ fn test_migration(config: &TestConfig) -> TestResult {
     let keys_count = 1000;
     let mut kv = HashMap::new();
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -532,8 +535,8 @@ fn test_scale_up_down(config: &TestConfig) -> TestResult {
     let keys_count = 1000;
     let mut kv = HashMap::new();
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -569,8 +572,8 @@ fn test_distribution(config: &TestConfig) -> TestResult {
     let keys_count = 10000;
     let mut kv = HashMap::new();
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -588,8 +591,8 @@ fn test_distribution_node_added(config: &TestConfig) -> TestResult {
     // insert random key-value pairs
     let keys_count = 10000;
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
@@ -620,8 +623,8 @@ fn test_distribution_node_removed(config: &TestConfig) -> TestResult {
     // insert random key-value pairs
     let keys_count = 10000;
     for _ in 0..keys_count {
-        let k = random_string(8).to_uppercase();
-        let v = random_string(8);
+        let k = random_string(8, &mut rand).to_uppercase();
+        let v = random_string(8, &mut rand);
         let node = sys.get_node_ids().choose(&mut rand).unwrap().clone();
         check_put(&mut sys, &node, &k, &v, 100)?;
         kv.insert(k, v);
