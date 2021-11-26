@@ -275,7 +275,15 @@ fn test_diverged_replicas(config: &TestConfig) -> TestResult {
         check_put(&mut sys, replica, &key, &value2, 1, 100)?;
         new_values.push(value2);
         // make some action to advance time
-        check_get(&mut sys, &non_replicas.get(0).unwrap(), "WHATEVER", 3, None, 100)?;
+        // read some key to advance time
+        // (check that isolated replica is not among this key replicas)
+        loop {
+            let some_key = random_string(8, &mut rand).to_uppercase();
+            if !key_replicas(&some_key, sys.node_count()).contains(&replica) {
+                check_get(&mut sys, &non_replicas.get(0).unwrap(), &some_key, 3, None, 100)?;
+                break;
+            }
+        }
         sys.connect_node(replica);
     }
 
