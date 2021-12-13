@@ -338,20 +338,25 @@ fn test_diverged_replicas(config: &TestConfig) -> TestResult {
     let mut new_values = Vec::new();
     for replica in replicas.iter() {
         sys.disconnect_node(replica);
+    }
+    for replica in replicas.iter() {
         let (_, ctx) = check_get(&mut sys, replica, &key, 1, Some(vec![&value]), 100)?;
         let value2 = random_string(8, &mut rand);
         check_put(&mut sys, replica, &key, &value2, ctx, 1, 100)?;
         new_values.push(value2);
         // read some key to advance time
-        // (check that isolated replica is not among this key replicas)
+        // (check that isolated replicas are not among this key replicas)
         loop {
             let some_key = random_string(8, &mut rand).to_uppercase();
-            if !key_replicas(&some_key, sys.node_count()).contains(&replica) {
+            let some_key_replicas = key_replicas(&some_key, sys.node_count());
+            if replicas.iter().all(|n| !some_key_replicas.contains(n)) {
                 check_get(
                     &mut sys, &non_replicas.get(0).unwrap(), &some_key, 3, Some(vec![]), 100)?;
                 break;
             }
         }
+    }
+    for replica in replicas.iter() {
         sys.connect_node(replica);
     }
 
