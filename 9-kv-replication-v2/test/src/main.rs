@@ -99,8 +99,16 @@ fn check_get(sys: &mut System<JsonMessage>, node: &str, key: &str, quorum: u8,
     let data: GetRespMessage = serde_json::from_str(&msg.data).unwrap();
     assume_eq!(data.key, key)?;
     if expected.is_some() {
-        let values_set: HashSet<_> = data.values.clone().into_iter().collect();
-        let expected_set: HashSet<_> = expected.unwrap().into_iter().collect();
+        let mut values_set: HashSet<_> = data.values.clone().into_iter().collect();
+        let mut expected_set: HashSet<_> = expected.unwrap().into_iter().collect();
+
+        if key.starts_with("CART") || key.starts_with("XCART") {
+            assert!(values_set.len() <= 1, "Expected no more than 1 value");
+            assert!(expected_set.len() <= 1, "Expected cant contain more than 1 value");
+            values_set = values_set.into_iter().next().map(|s| s.split(",").collect()).unwrap_or_default();
+            expected_set = expected_set.into_iter().next().map(|s| s.split(",").collect()).unwrap_or_default();
+        }
+
         assume_eq!(values_set, expected_set)?;
     }
     Ok((data.values.iter().map(|x| x.to_string()).collect(), data.context.map(str::to_string)))
