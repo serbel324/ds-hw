@@ -1,1 +1,0 @@
-from caption import get_image_caption
