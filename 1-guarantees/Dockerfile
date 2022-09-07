@@ -11,4 +11,4 @@ RUN (cd test && cargo fetch)
 COPY 1-guarantees/ .
 
 WORKDIR /guarantees/test
-ENTRYPOINT ["cargo", "run"]
+ENTRYPOINT ["cargo", "run", "--", "-m", "100", "-o"]
