@@ -64,8 +64,8 @@ $ docker pull registry.gitlab.com/nanobjorn/distsys-homework
 
 Если у вас M1 или другой arm64, то надо сделать:
 ```
-$ docker pull registry.gitlab.com/nanobjorn/distsys-homework:arm64
-$ docker image tag registry.gitlab.com/nanobjorn/distsys-homework:arm64 registry.gitlab.com/nanobjorn/distsys-homework:latest
+$ docker pull registry.gitlab.com/nanobjorn/distsys-homework:latest-arm
+$ docker image tag registry.gitlab.com/nanobjorn/distsys-homework:latest-arm registry.gitlab.com/nanobjorn/distsys-homework:latest
 ```
 
 Теперь соберём образ с вашим решением и тестами:
