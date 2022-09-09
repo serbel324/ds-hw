@@ -254,7 +254,7 @@ fn check_overhead(
     )?;
     assume!(
         net_message_count <= net_message_count_limit,
-        format!("Message count > {}", net_traffic_limit)
+        format!("Message count > {}", net_message_count_limit)
     )?;
     assume!(
         net_traffic <= net_traffic_limit,
