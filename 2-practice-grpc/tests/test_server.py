@@ -26,6 +26,7 @@ def wait_for_socket(host, port):
         except ConnectionRefusedError as e:
             exception = e
             print(f'Got ConnectionError for url {host}:{port}: {e} , retrying')
+            retries -= 1
             time.sleep(2)
     raise exception
 

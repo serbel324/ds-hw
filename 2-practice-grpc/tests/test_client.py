@@ -14,6 +14,7 @@ def wait_for_http(url):
         except requests.exceptions.ConnectionError as e:
             exception = e
             print(f'Got ConnectionError for url {url}: {e} , retrying')
+            retries -= 1
             time.sleep(2)
     raise exception
 
