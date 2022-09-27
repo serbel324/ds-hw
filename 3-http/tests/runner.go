@@ -3,13 +3,14 @@ package hw3test
 import (
 	"bytes"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
 	"text/template"
+
+	"go.uber.org/zap"
 )
 
 // RunOpts contains command line arguments for the solution.
@@ -36,7 +37,12 @@ type RunOpts struct {
 }
 
 func (o *RunOpts) Address() string {
-	return fmt.Sprintf("http://localhost:%d", o.Port)
+	host := os.Getenv("SOLUTION_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	return fmt.Sprintf("http://%s:%d", host, o.Port)
 }
 
 func (o *RunOpts) GenerateRunConfig(t *TC, r *rand.Rand, gen *EnvGen) {
