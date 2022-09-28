@@ -3,13 +3,14 @@ package hw3test
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"math/rand"
 	"net/http"
 	"os"
 	"path"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // RunTestEmptyWorkDir will check that server does exit(1) if working directory is empty.
@@ -23,6 +24,7 @@ func RunTestEmptyWorkDir(t *TC, seed int64, runner Runner) {
 			Port:             port,
 			WorkingDirectory: "",
 			ServerDomain:     "",
+			ListenAddr:       "0.0.0.0",
 			ExitCode:         make(chan int),
 		}
 
@@ -67,6 +69,7 @@ func RunTests(t *TC, seed int64, runner Runner, envGen *EnvGen, queriesGen *Quer
 			Port:             port,
 			WorkingDirectory: envDir,
 			ServerDomain:     "",
+			ListenAddr:       "0.0.0.0",
 		}
 		if queriesGen.AllHeaders {
 			possibleDomains := []string{
