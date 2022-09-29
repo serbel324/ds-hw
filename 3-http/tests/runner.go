@@ -87,7 +87,7 @@ func (o RunOpts) BuildConfig(r *rand.Rand, gen *EnvGen) (args string, env []stri
 	} else if gen.AllowEnv && r.Intn(3) == 1 {
 		// use env
 		env = append(env, fmt.Sprintf("SERVER_HOST=%s", o.ListenAddr))
-	} else {
+	} else if o.ListenAddr != "" {
 		// use plain cmdline args
 		args += fmt.Sprintf(" \"--host=%s\"", o.ListenAddr)
 
@@ -117,7 +117,7 @@ func (o RunOpts) BuildConfig(r *rand.Rand, gen *EnvGen) (args string, env []stri
 	} else if gen.AllowEnv && r.Intn(3) == 1 {
 		// use env
 		env = append(env, fmt.Sprintf("SERVER_WORKING_DIRECTORY=%s", o.WorkingDirectory))
-	} else {
+	} else if o.WorkingDirectory != "" {
 		// use plain cmdline args
 		args += fmt.Sprintf(" \"--working-directory=%s\"", o.WorkingDirectory)
 
@@ -132,7 +132,7 @@ func (o RunOpts) BuildConfig(r *rand.Rand, gen *EnvGen) (args string, env []stri
 	} else if gen.AllowEnv && r.Intn(3) == 1 {
 		// use env
 		env = append(env, fmt.Sprintf("SERVER_DOMAIN=%s", o.ServerDomain))
-	} else {
+	} else if o.ServerDomain != "" {
 		// use plain cmdline args
 		args += fmt.Sprintf(" \"--server-domain=%s\"", o.ServerDomain)
 
