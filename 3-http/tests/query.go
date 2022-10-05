@@ -132,9 +132,11 @@ func (g GetFileAction) VerifyResponse(t *TC, r *http.Request, resp *http.Respons
 	require.Equal(t, 200, resp.StatusCode, "expected OK")
 	if g.Compression {
 		require.True(t, resp.Uncompressed, "expected compressed response from the server")
-	} else {
-		require.Equal(t, g.File.Size, resp.ContentLength, "expected content length")
 	}
+	if resp.ContentLength != -1 {
+		require.Equal(t, g.File.Size, resp.ContentLength, "invalid content length")
+	}
+	// otherwise length mismatch will be detected by CompareFileContent
 	_, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 	require.NoError(t, err, "expected valid content type")
 	require.NoError(t, CompareFileContent(t, resp.Body, g.File), "file content mismatch")

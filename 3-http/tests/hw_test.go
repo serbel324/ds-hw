@@ -29,8 +29,11 @@ func TestHW(tt *testing.T) {
 	launchTemplate := template.Must(template.New("launch").Parse(string(tmplContent)))
 
 	runner := NewCmdRunner(launchTemplate, useDocker)
-	tmpDir, err := os.Getwd()
-	require.NoError(t, err, "failed to get current directory")
+	tmpDir := os.Getenv("OVERRIDE_TEMP_DIR")
+	if len(tmpDir) == 0 {
+		tmpDir, err = os.Getwd()
+		require.NoError(t, err, "failed to get current directory")
+	}
 	tmpDir = path.Join(tmpDir, "tmp")
 	require.NoError(t, os.MkdirAll(tmpDir, 0777), "failed to create tmp dir")
 

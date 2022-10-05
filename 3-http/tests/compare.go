@@ -27,13 +27,19 @@ func CompareFileContent(t *TC, r io.Reader, f *EnvFile) error {
 	bufr := bufio.NewReader(r)
 	buff := bufio.NewReader(f.Open())
 
-	for i := int64(0); i < f.Size; i++ {
+	for i := int64(0); i <= f.Size; i++ {
 		b1, err1 := bufr.ReadByte()
 		b2, err2 := buff.ReadByte()
 		if err1 != nil || err2 != nil {
 			if err1 == io.EOF && err2 == io.EOF {
 				// unexpected early EOF
 				return nil
+			}
+			if err1 == io.EOF {
+				return fmt.Errorf("unexpected end of file")
+			}
+			if err2 == io.EOF {
+				return fmt.Errorf("fount extra data at the end of file")
 			}
 			if err1 != nil {
 				return fmt.Errorf("unexpected file error: %w", err1)
