@@ -11,12 +11,35 @@ class HTTPRequest:
 
     @staticmethod
     def from_bytes(data: bytes) -> "HTTPRequest":
-        # TODO: Write your code
-        pass
+        lines = data.split(CRLF)
+        
+        start_line = lines[0].decode('utf-8').split(' ')
+        method = start_line[0]
+        path = start_line[1]
+        version = start_line[2]
+
+        headers: t.Dict[str, str] = {}
+        parameters: t.Dict[str, str] = {}
+
+        i = 1
+        while lines[i] != b"":
+            key, value = lines[i].decode('utf-8').split(": ", maxsplit=1)
+            headers[key] = value
+            i += 1
+        
+  
+        return HTTPRequest(method=method, path=path, version=version, parameters=parameters, headers=headers)
 
     def to_bytes(self) -> bytes:
-        # TODO: Write your code
-        pass
+        data = b''
+        data += bytes(self.method, 'utf-8') + b' '
+        data += bytes(self.path, 'utf-8') + b' '
+        data += bytes(self.version, 'utf-8') + CRLF
+
+        for key, value in self.headers.items():
+            data += bytes(key, 'utf-8') + b': ' + bytes(value, 'utf-8') + CRLF
+        data += CRLF
+        return data
 
 
 @dataclasses.dataclass
@@ -24,15 +47,36 @@ class HTTPResponse:
     version: str
     status: str
     headers: t.Dict[str, str]
+    content: str
 
     @staticmethod
     def from_bytes(data: bytes) -> "HTTPResponse":
-        # TODO: Write your code
-        pass
+        lines = data.split(CRLF)
+        
+        start_line = lines[0].decode('utf-8').split(' ')
+        version = start_line[0]
+        status = start_line[1]
+
+        headers: t.Dict[str, str] = {}
+
+        i = 1
+        while lines[i] != "":
+            key, value = lines[i].decode('utf-8').split(": ", maxsplit=1)
+            headers[key] = value
+            i += 1
+        return HTTPResponse(version=version, status=status, headers=headers)
 
     def to_bytes(self) -> bytes:
-        # TODO: Write your code
-        pass
+        data = b''
+        data += bytes(self.version, 'utf-8') + b' '
+        data += bytes(self.status, 'utf-8') + CRLF
+
+        for key, value in self.headers.items():
+            data += bytes(str(key), 'utf-8') + b': ' + bytes(str(value), 'utf-8') + CRLF
+        data += CRLF
+
+        data += bytes(str(self.content), 'utf-8')
+        return data
 
 # Common HTTP strings and constants
 
