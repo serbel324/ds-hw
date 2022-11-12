@@ -6,6 +6,12 @@ import typing as t
 import click
 import socket
 
+import os
+import subprocess
+from http_messages import HTTPRequest, HTTPResponse
+from http_messages import HTTP_VERSION, TEXT_PLAIN, HEADER_CONTENT_TYPE
+from http_messages import HEADER_CONTENT_LENGTH, GET, OK, NOT_FOUND
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -24,12 +30,35 @@ class HTTPHandler(StreamRequestHandler):
     # Use self.rfile and self.wfile to interact with the client
     # Access domain and working directory with self.server.{attr}
     def handle(self) -> None:
-        first_line = self.rfile.readline()
-        logger.info(f"Handle connection from {self.client_address}, first_line {first_line}")
+        # first_line = self.rfile.readline()
+        # logger.info(f"Handle connection from {self.client_address}, first_line {first_line}")
+        rfile_content = self.rfile.read()
+        http_request = HTTPRequest.from_bytes(b'' + rfile_content)
+    
+        http_response = HTTPResponse(version="HTTP/" + HTTP_VERSION, status="", headers={}, content="")
+        http_response.headers[HEADER_CONTENT_TYPE] = TEXT_PLAIN
+    
+        request_path = pathlib.Path(http_request.path)
+        path = pathlib.Path(self.server.working_directory, request_path)
 
-        # TODO: Write your code
+        if (http_request.method == GET):
+            if (path.is_file()):
+                f = open(path, 'r')
+                http_response.content = f.read()
+                http_response.status = OK
+            elif (path.is_dir()):
+                http_response.content = subprocess.check_output(["ls", "-lA", str(path)])
+                http_response.status = OK
+            else:
+                http_response.content = b'no file lol'
+                http_response.status = NOT_FOUND
 
-        pass
+
+        http_response.headers[HEADER_CONTENT_LENGTH] = len(http_response.content)
+
+        response = http_response.to_bytes()
+        self.wfile.write(response)
+        self.wfile.flush()
 
 
 @click.command()
@@ -38,7 +67,16 @@ class HTTPHandler(StreamRequestHandler):
 @click.option("--server-domain", type=str)
 @click.option("--working-directory", type=str)
 def main(host, port, server_domain, working_directory):
-    # TODO: Write your code
+    if (host is None):
+        host = os.environ.get("SERVER_HOST", "0.0.0.0")
+    if (port is None):
+        port = os.environ.get("SERVER_PORT", 8080)
+    if (server_domain is None):
+        server_domain = os.environ.get("SERVER_DOMAIN")
+    if (working_directory is None):
+        working_directory = os.environ.get("SERVER_WORKING_DIRECTORY")
+        if (working_directory is None):
+            exit(1)
 
     working_directory_path = pathlib.Path(working_directory)
 
@@ -77,7 +115,7 @@ def main(host, port, server_domain, working_directory):
         except Exception as e:
             logger.error(e)
             conn.close()
-
-
+ 
+ 
 if __name__ == "__main__":
     main(auto_envvar_prefix="SERVER")
