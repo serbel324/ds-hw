@@ -217,10 +217,22 @@ fn key_replicas(key: &str, sys: &System<JsonMessage>) -> Vec<String> {
 
 fn key_non_replicas(key: &str, sys: &System<JsonMessage>) -> Vec<String> {
     let replicas = key_replicas(&key, sys);
-    sys.get_node_ids()
-        .into_iter()
-        .filter(|x| !replicas.contains(x))
-        .collect()
+    let mut non_replicas_pre = Vec::new();
+    let mut non_replicas = Vec::new();
+    let mut pre = true;
+    for node in sys.get_node_ids() {
+        if replicas.contains(&node) {
+            pre = false;
+            continue;
+        }
+        if pre {
+            non_replicas_pre.push(node);
+        } else {
+            non_replicas.push(node);
+        }
+    }
+    non_replicas.append(&mut non_replicas_pre);
+    non_replicas
 }
 
 // TESTS ---------------------------------------------------------------------------------------------------------------
@@ -234,6 +246,7 @@ fn test_basic(config: &TestConfig) -> TestResult {
     let replicas = key_replicas(&key, &sys);
     let non_replicas = key_non_replicas(&key, &sys);
     println!("Key {} replicas: {:?}", key, replicas);
+    println!("Key {} non-replicas: {:?}", key, non_replicas);
 
     // get key from the first node
     check_get(&mut sys, &nodes[0], &key, 2, None, 100)?;
@@ -417,7 +430,7 @@ fn test_diverged_replicas(config: &TestConfig) -> TestResult {
         check_put(&mut sys, replica, &key, &value2, 1, 100)?;
         new_values.push(value2);
         // read some key to advance the time
-        // (make sure that the isolated replica is not among this key replicas)
+        // (make sure that the isolated replica is not among this key's replicas)
         loop {
             let some_key = random_string(8, &mut rand).to_uppercase();
             if !key_replicas(&some_key, &sys).contains(&replica) {
@@ -570,9 +583,9 @@ fn test_partition_mixed(config: &TestConfig) -> TestResult {
     let client2 = &non_replicas[1];
     let client3 = &non_replicas[2];
 
-    // put key from the first node with quorum 2
+    // put key from the first node with quorum 3
     let value = random_string(8, &mut rand);
-    check_put(&mut sys, &nodes[0], &key, &value, 2, 100)?;
+    check_put(&mut sys, &nodes[0], &key, &value, 3, 100)?;
 
     // partition clients and replicas
     let part1: Vec<&str> = vec![client1, client2, replica1];
@@ -630,7 +643,7 @@ struct Args {
     debug: bool,
 
     /// Number of nodes used in tests
-    #[clap(long, short, default_value = "10")]
+    #[clap(long, short, default_value = "6")]
     node_count: u32,
 
     /// Random seed used in tests
