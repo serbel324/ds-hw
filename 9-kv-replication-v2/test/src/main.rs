@@ -46,7 +46,7 @@ struct PutMessage<'a> {
 struct PutRespMessage<'a> {
     key: &'a str,
     values: Vec<&'a str>,
-    context: &'a str,
+    context: Cow<'a, str>,
 }
 
 // UTILS -------------------------------------------------------------------------------------------
