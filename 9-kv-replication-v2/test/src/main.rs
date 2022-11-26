@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::env;
 use std::io::Write;
@@ -30,7 +31,7 @@ struct GetMessage<'a> {
 struct GetRespMessage<'a> {
     key: &'a str,
     values: Vec<&'a str>,
-    context: Option<&'a str>,
+    context: Option<Cow<'a, str>>,
 }
 
 #[derive(Serialize)]
@@ -45,7 +46,7 @@ struct PutMessage<'a> {
 struct PutRespMessage<'a> {
     key: &'a str,
     values: Vec<&'a str>,
-    context: &'a str,
+    context: Cow<'a, str>,
 }
 
 // UTILS -------------------------------------------------------------------------------------------
@@ -125,7 +126,7 @@ fn check_get(
     }
     Ok((
         data.values.iter().map(|x| x.to_string()).collect(),
-        data.context.map(str::to_string),
+        data.context.map(|x| x.to_string()),
     ))
 }
 
