@@ -9,4 +9,7 @@
   script:
     - cd 10-practice-security
     - docker-compose build
-    - docker-compose up auth kv tests
+    - docker-compose up -d auth kv
+    - docker-compose up tests
+    - docker-compose logs auth
+    - docker-compose logs kv
