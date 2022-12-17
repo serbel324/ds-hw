@@ -1,13 +1,8 @@
-FROM golang:1.18-alpine
+FROM python:3.9-slim
 
-WORKDIR /pracrice-security/kv
-COPY go.* .
+RUN pip install flask
+RUN pip install pyjwt
 
-RUN go mod download -x
+COPY . .
 
-COPY * .
-
-RUN go build .
-
-ENTRYPOINT ["./kv"]
-
+ENTRYPOINT ['python', 'server.py']

@@ -1,13 +1,9 @@
-FROM golang:1.18-alpine
+FROM python:3.9-slim
 
-WORKDIR /pracrice-security/auth
-COPY go.* .
+RUN pip install flask
+RUN pip install pyjwt
+RUN pip install loguru
 
-RUN go mod download -x
+COPY . .
 
-COPY * .
-
-RUN go build .
-
-ENTRYPOINT ["./auth"]
-
+ENTRYPOINT ["python", "server.py"]
