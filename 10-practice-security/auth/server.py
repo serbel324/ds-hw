@@ -93,4 +93,4 @@ if __name__ == '__main__':
     with open(args.public, 'r') as f:
         public_key = f.read()
 
-    app.run(host='127.0.0.1', port=args.port)
+    app.run(host='0.0.0.0', port=args.port)
