@@ -16,7 +16,7 @@ services:
             - ./auth/signature.pub:/tmp/signature.pub
         command: ["--public", "/tmp/signature.pub", "--port", "8090"]
         ports:
-            - 8091:8090
+            - 8092:8090
 
     tests:
         build:
