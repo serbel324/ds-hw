@@ -14,16 +14,16 @@ services:
             context: kv
         volumes:
             - ./auth/signature.pub:/tmp/signature.pub
-        command: ["--public", "/tmp/signature.pub", "--port", "8091"]
+        command: ["--public", "/tmp/signature.pub", "--port", "8090"]
         ports:
-            - 8091:8091
+            - 8091:8090
 
     tests:
         build:
             context: tests
         environment:
-            KV_SERVER_URL: "http://localhost:8091"
-            AUTH_SERVER_URL: "http://localhost:8090"
+            KV_SERVER_URL: "http://kv:8090"
+            AUTH_SERVER_URL: "http://auth:8090"
             JWT_PRIVATE_KEY_FILE: "/tmp/signature.pem"
             JWT_PUBLIC_KEY_FILE: "/tmp/signature.pub"
         volumes:
@@ -32,3 +32,4 @@ services:
         depends_on:
             - auth
             - kv
+
